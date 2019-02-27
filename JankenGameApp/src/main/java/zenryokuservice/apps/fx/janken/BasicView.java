@@ -1,30 +1,50 @@
 package zenryokuservice.apps.fx.janken;
 
+import com.gluonhq.charm.glisten.application.MobileApplication;
 import com.gluonhq.charm.glisten.control.AppBar;
 import com.gluonhq.charm.glisten.control.Icon;
 import com.gluonhq.charm.glisten.mvc.View;
 import com.gluonhq.charm.glisten.visual.MaterialDesignIcon;
+import com.sun.glass.ui.Screen;
+
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
+import javafx.scene.PerspectiveCamera;
+import javafx.scene.PointLight;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.Box;
+import javafx.scene.shape.Cylinder;
+import javafx.scene.shape.Sphere;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 
 public class BasicView extends View {
 
     public BasicView() {
-        
-        Label label = new Label("Hello JavaFX World!");
-
-        Button button = new Button("Change Text!");
-        button.setGraphic(new Icon(MaterialDesignIcon.LANGUAGE));
-        button.setOnAction(e -> {
-        	setCenter(new TestingView());
-        });
-        
-        VBox controls = new VBox(15.0, label, button);
-        controls.setAlignment(Pos.CENTER);
-        
-        setCenter(controls);
+    	// 縦のレイアウト
+    	VBox layout = new VBox(300);
+    	layout.setAlignment(Pos.CENTER);
+    	
+    	// タイトル文言
+    	layout.getChildren().add(this.getTitleNode());
+    	// スタートボタン
+    	Button start = new Button("スタート");
+    	start.setOnAction(event -> setCenter(new TestingView()));
+    	layout.getChildren().add(start);
+        // 画面に登録
+        Group gp = new Group(layout);
+        setCenter(gp);
     }
 
     @Override
@@ -33,5 +53,37 @@ public class BasicView extends View {
 //        appBar.setTitleText("Basic View");
 //        appBar.getActionItems().add(MaterialDesignIcon.SEARCH.button(e -> System.out.println("Search")));
     }
-    
+
+    /**
+     * 画面のタイトルを作成します。
+     * @return タイトル部分のノード
+     */
+    private HBox getTitleNode() {
+    	HBox hbox = new HBox(20);
+    	Text jan = new Text("じゃん");
+    	this.settingFont(jan, Color.BLUE);
+    	hbox.getChildren().add(jan);
+
+    	Text ken = new Text("けん");
+    	this.settingFont(ken, Color.YELLOW);
+    	hbox.getChildren().add(ken);
+
+    	Text game = new Text("ゲーム");
+    	this.settingFont(game, Color.RED);
+    	hbox.getChildren().add(game);
+    	return hbox;
+    }
+
+    /**
+     * テキストの設定を行います。
+     * @param tx 表示するテキスト
+     * @param color 設定する色
+     */
+    private void settingFont(Text tx, Color color) {
+    	double width = MobileApplication.getInstance().getGlassPane().getWidth();
+    	tx.setFont(new Font(width / 10));
+    	tx.setFill(color);
+    	tx.setStroke(Color.BLACK);
+    	tx.setStrokeWidth(1.0);
+    }
 }
