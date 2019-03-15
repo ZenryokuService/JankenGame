@@ -36,39 +36,39 @@ import javafx.scene.transform.Translate;
  * @see https://docs.oracle.com/javase/jp/8/javafx/graphics-tutorial/overview-3d.htm#CJAHFAHJ
  */
 public class TestingView extends View {
-	public TestingView() {
-		double height = MobileApplication.getInstance().getScreenHeight();
-		VBox gp = new VBox();
-		// Rready
-		Text ready = new Text();
-		ready.setText("READY?");
-		ready.setFont(new Font(45));
-		ready.setTextAlignment(TextAlignment.CENTER);
-		HBox topLine = new HBox();
-		topLine.setAlignment(Pos.CENTER);
-		topLine.setMinHeight(height * 0.2);
-		topLine.getChildren().add(ready);
-		gp.getChildren().add(topLine);
+public TestingView() {
+	double height = MobileApplication.getInstance().getScreenHeight();
+	VBox gp = new VBox();
+	// Rready
+	Text ready = new Text();
+	ready.setText("READY?");
+	ready.setFont(new Font(45));
+	ready.setTextAlignment(TextAlignment.CENTER);
+	HBox topLine = new HBox();
+	topLine.setAlignment(Pos.CENTER);
+	topLine.setMinHeight(height * 0.2);
+	topLine.getChildren().add(ready);
+	gp.getChildren().add(topLine);
 
-		// じゃんけんの手
-		final HBox midLine = new HBox();
-		midLine.setMinHeight(height * 0.34);
-		final Canvas canv = new Canvas();
-		midLine.getChildren().add(canv);
-		gp.getChildren().add(midLine);
-		// ボタン
-		final GraphicsContext ctx = canv.getGraphicsContext2D();
-		Button btn = new Button("バトル");
-		btn.setOnAction(evt -> {
-			startJanken(ctx, midLine);
-		});
-		HBox bottomLine = new HBox();
-		bottomLine.setAlignment(Pos.CENTER);
-		bottomLine.setMinHeight(height * 0.3);
-		bottomLine.getChildren().add(btn);
-		gp.getChildren().add(bottomLine);
-		setCenter(gp);
-	}
+	// じゃんけんの手
+	final HBox midLine = new HBox();
+	midLine.setMinHeight(height * 0.34);
+	final Canvas canv = new Canvas();
+	midLine.getChildren().add(canv);
+	gp.getChildren().add(midLine);
+	// ボタン
+	final GraphicsContext ctx = canv.getGraphicsContext2D();
+	Button btn = new Button("バトル");
+	btn.setOnAction(evt -> {
+		startJanken(ctx, midLine);
+	});
+	HBox bottomLine = new HBox();
+	bottomLine.setAlignment(Pos.CENTER);
+	bottomLine.setMinHeight(height * 0.3);
+	bottomLine.getChildren().add(btn);
+	gp.getChildren().add(bottomLine);
+	setCenter(gp);
+}
 
 	/**
 	 * じゃんけんなどのアニメーションを作成する。
