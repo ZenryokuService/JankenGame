@@ -8,6 +8,8 @@
  */
 package zenryokuservice.apps.fx.janken;
 
+import java.util.Random;
+
 import com.gluonhq.charm.glisten.application.MobileApplication;
 import com.gluonhq.charm.glisten.mvc.View;
 import com.sun.prism.paint.Color;
@@ -44,6 +46,25 @@ import javafx.util.Duration;
  * @see https://docs.oracle.com/javase/jp/8/javafx/graphics-tutorial/overview-3d.htm#CJAHFAHJ
  */
 public class TestingView extends View {
+	/** じゃんけんぽん */
+	private final String[] t = new String[] {"Jan!", "Ken", "POM!"};
+	/** じゃんけんぽん(アイコ) */
+	private final String[] a = new String[] {"Ai!", "KoDe", "Show!"};
+	/** 勝敗判定文字列 */
+	private final String[] hanteStr = new String[] {"YouWin", "YouLoose", "Aiko"};
+	/** テキストの色 */
+	private final Color[] color = {Color.RED, Color.BLUE, Color.GREEN};
+	/** 乱数用クラス */
+	private final Random rdn = new  Random();
+	/** じゃんけんの判定：ユーザーの勝ち */
+	private static final int YOU_WIN = 0;
+	/** じゃんけんの判定：CPUの勝ち */
+	private static final int YOU_LOOSE = 1;
+	/** じゃんけんの判定：あいこ */
+	private static final int AIKO = 2;
+	/** じゃんけんの勝敗判定: それ以外 */
+	private static final int OTHER = 3;
+
 	/** main timeline */
     private Timeline timeline;
     private AnimationTimer timer;
@@ -51,73 +72,107 @@ public class TestingView extends View {
     private Integer i = new Integer(0);
     /** 文字表示用カウンタ */ 
 	private Integer c = new Integer(0);
-	/** じゃんけんぽん */
-	private final String[] t = new String[] {"Jan!", "Ken", "POM!"};
-	/** テキストの色 */
-	private final Color[] color = {Color.RED, Color.BLUE, Color.GREEN}; 
-
+	/** ユーザーの手 */
+	private int userTe;
+	/** CPUの手 */
+	private int cpuTe;
+	
 
 	/** コンストラクタ */
 	public TestingView() {
 		double height = MobileApplication.getInstance().getScreenHeight();
 		VBox gp = new VBox();
-		// Rready
+		// Rreadyの文言
 		Text ready = new Text();
 		ready.setText("READY?");
 		ready.setFont(new Font(45));
 		ready.setTextAlignment(TextAlignment.CENTER);
+		// 一番上の横一列レイアウト
 		HBox topLine = new HBox();
 		topLine.setAlignment(Pos.CENTER);
 		topLine.setMinHeight(height * 0.2);
 		topLine.getChildren().add(ready);
 		gp.getChildren().add(topLine);
 	
-		// じゃんけんの手
+		// じゃんけんの手を表示するための真ん中の横一列レイアウト
 		final HBox midLine = new HBox();
 		midLine.setMinHeight(height * 0.20);
 		final Canvas canv = new Canvas();
 		midLine.getChildren().add(canv);
 		gp.getChildren().add(midLine);
 
-		// ボタン
+		// 描画用のグラフィックスコンテキスト
 		final GraphicsContext ctx = canv.getGraphicsContext2D();
+		// じゃんけん開始ボタン
 		Button btn = new Button("勝負！");
 		btn.setAlignment(Pos.CENTER);
 		HBox btnLine = new HBox();
 		btnLine.setAlignment(Pos.CENTER);
 		btnLine.getChildren().add(btn);
 		gp.getChildren().add(btnLine);
-
+		// ボタンを表示するための横一列レイアウト
 		HBox bottomLine = new HBox();
 		bottomLine.setAlignment(Pos.CENTER);
-		bottomLine.setMinHeight(height * 0.3);
-
+		bottomLine.setMinHeight(height * 0.20);
+		// ぐー
 		Button goo = new Button("Rock");
 		goo.setAlignment(Pos.BASELINE_LEFT);
 		bottomLine.getChildren().add(goo);
-		
+		// ぐーアクション
+		goo.setOnAction(evt -> {
+			midLine.getChildren().clear();
+			Image img = new Image("leftグー.png");
+			ImageView you = new ImageView();
+			you.setImage(img);
+			midLine.getChildren().add(you);
+			userTe = 0;
+		});
+		// チョキ
 		Button chi = new Button("Scissors");
 		chi.setAlignment(Pos.CENTER);
 		bottomLine.getChildren().add(chi);
-		
+		// チョキアクション
+		chi.setOnAction(evt -> {
+			midLine.getChildren().clear();
+			Image img = new Image("leftチョキ.png");
+			ImageView you = new ImageView();
+			you.setImage(img);
+			midLine.getChildren().add(you);
+			userTe = 1;
+		});
+		// パー
 		Button pa = new Button("Paper");
 		pa.setAlignment(Pos.BASELINE_RIGHT);
 		bottomLine.getChildren().add(pa);
-
+		// パーアクション
+		pa.setOnAction(evt -> {
+			midLine.getChildren().clear();
+			Image img = new Image("leftパー.png");
+			ImageView you = new ImageView();
+			you.setImage(img);
+			midLine.getChildren().add(you);
+			userTe = 2;
+		});
+		// 非表示に設定
 		goo.setVisible(false);
 		chi.setVisible(false);
 		pa.setVisible(false);
 		gp.getChildren().add(bottomLine);
 		setCenter(gp);
-		// アクション
+		// アクション(勝負ボタン)
 		btn.setOnAction(evt -> {
+			// じゃんけんの手を初期化
+			userTe = -1;
+			cpuTe = -1;
+			// 勝負ボタンの非表示
 			btn.setVisible(false);
+			// じゃんけんの手を表示
 			goo.setVisible(true);
 			chi.setVisible(true);
 			pa.setVisible(true);
+			// じゃんけんアニメーション
 			startJanken(ctx, midLine, ready);
 		});
-
 	}
 
 	/**
@@ -172,10 +227,11 @@ public class TestingView extends View {
 					c++;
 				}
 				if (c >= 3) {
-					System.out.println("*** Stop: c=" + c + " ***");
 					timer.stop();
 					rotateTransition.stop();
 					rotateTransition2.stop();
+					midLine.getChildren().add(getCpuNoTe());
+					shobu(ready);
 				}
 				i++;
 			}
@@ -183,5 +239,42 @@ public class TestingView extends View {
 		timeline.play();
 		timer.start();
 	}
-	
+
+	/**
+	 * CPUのじゃんけんの手を返却します。
+	 * @return ImageView じゃんけんの手
+	 */
+	private ImageView getCpuNoTe() {
+		Image[] imgHako = {new Image("rightグー.png"), new Image("rightチョキ.png"), new Image("rightパー.png")};
+		ImageView cpu = new ImageView();
+		// 0-2までの乱数
+		int te = rdn.nextInt(2);
+		cpu.setImage(imgHako[te]);
+		cpuTe = te;
+		return cpu;
+	}
+
+	/**
+	 * じゃんけんの勝敗判定を行う。
+	 * @return 0: ユーザーの勝利 1: CPUの勝利　2: あいこ
+	 */
+	private int shobu(Text ready) {
+		int aikoHante = cpuTe == userTe ? AIKO : OTHER;
+		if (aikoHante == AIKO) {
+			return AIKO;
+		}
+		int hante = userTe + cpuTe;
+		if (hante == 0 || hante == 4 || hante == 8) {
+			hante = AIKO;
+		} else if (hante == 2 || hante == 3 || hante == 7) {
+			hante = YOU_WIN;
+		} else {
+			hante = YOU_LOOSE;
+		}
+		System.out.println("*** 判定 ***");
+		System.out.println("user: " + userTe + " / cpu: " + cpuTe);
+		System.out.println(hanteStr[hante]);
+		ready.setText(hanteStr[hante]);
+		return hante;
+	}
 }
