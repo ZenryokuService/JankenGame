@@ -26,6 +26,7 @@ import javafx.scene.Parent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -46,6 +47,7 @@ import javafx.util.Duration;
  * @see https://docs.oracle.com/javase/jp/8/javafx/graphics-tutorial/overview-3d.htm#CJAHFAHJ
  */
 public class TestingView extends View {
+	///// 定数 /////
 	/** じゃんけんぽん */
 	private final String[] t = new String[] {"Jan!", "Ken", "POM!"};
 	/** じゃんけんぽん(アイコ) */
@@ -54,8 +56,6 @@ public class TestingView extends View {
 	private final String[] hanteStr = new String[] {"YouWin", "YouLoose", "Aiko"};
 	/** テキストの色 */
 	private final Color[] color = {Color.RED, Color.BLUE, Color.GREEN};
-	/** 乱数用クラス */
-	private final Random rdn = new  Random();
 	/** じゃんけんの判定：ユーザーの勝ち */
 	private static final int YOU_WIN = 0;
 	/** じゃんけんの判定：CPUの勝ち */
@@ -64,60 +64,68 @@ public class TestingView extends View {
 	private static final int AIKO = 2;
 	/** じゃんけんの勝敗判定: それ以外 */
 	private static final int OTHER = 3;
-
-	/** main timeline */
+	///// Utility /////
+	/** 乱数用クラス */
+	private final Random rdn = new  Random();
+	/** アニメーション用タイマー */
     private Timeline timeline;
     private AnimationTimer timer;
     /** タイマー確認用カウンタ */
     private Integer i = new Integer(0);
+    /// クラス内で使用する変数 ///
     /** 文字表示用カウンタ */ 
 	private Integer c = new Integer(0);
 	/** ユーザーの手 */
 	private int userTe;
 	/** CPUの手 */
 	private int cpuTe;
-	
+	/// 画面コンポーネント ///
+	/** 画面上部の切り替えて表示テキスト */
+	private Text ready;
+	/** 勝負ボタン */
+	private Button btn;
+	/** ぐーボタン */
+	private final Button goo;
+	/** チョキボタン */
+	private final Button chi;
+	/** パーボタン */
+	private final Button pa;
+	/// レイアウト ///
+	/** 上部のレイアウト */
+	private final HBox topLine;
+	/** アニメーション表示レイアウト */
+	private final HBox midLine;
+	/** ユーザー入力用ボタンレイアウト */
+	private final HBox bottomLine;
+	/** 勝負ボタン配置用レイアウト */
+	private final HBox btnLine;
 
 	/** コンストラクタ */
 	public TestingView() {
 		double height = MobileApplication.getInstance().getScreenHeight();
 		VBox gp = new VBox();
 		// Rreadyの文言
-		Text ready = new Text();
-		ready.setText("READY?");
-		ready.setFont(new Font(45));
-		ready.setTextAlignment(TextAlignment.CENTER);
+		ready = createReadyTxt();
 		// 一番上の横一列レイアウト
-		HBox topLine = new HBox();
-		topLine.setAlignment(Pos.CENTER);
-		topLine.setMinHeight(height * 0.2);
-		topLine.getChildren().add(ready);
+		topLine = createLineLayout(height * 0.2, ready);
 		gp.getChildren().add(topLine);
 	
-		// じゃんけんの手を表示するための真ん中の横一列レイアウト
-		final HBox midLine = new HBox();
-		midLine.setMinHeight(height * 0.20);
+		// 描画用のキャンバス(今後使用する予定) => 現状は未使用
 		final Canvas canv = new Canvas();
-		midLine.getChildren().add(canv);
+		// じゃんけんの手を表示するための真ん中の横一列レイアウト
+		midLine = createLineLayout(height * 0.20, canv);
 		gp.getChildren().add(midLine);
 
 		// 描画用のグラフィックスコンテキスト
 		final GraphicsContext ctx = canv.getGraphicsContext2D();
 		// じゃんけん開始ボタン
-		Button btn = new Button("勝負！");
+		btn = new Button("勝負！");
 		btn.setAlignment(Pos.CENTER);
-		HBox btnLine = new HBox();
-		btnLine.setAlignment(Pos.CENTER);
-		btnLine.getChildren().add(btn);
+		btnLine = createLineLayout(0.0, btn);
 		gp.getChildren().add(btnLine);
-		// ボタンを表示するための横一列レイアウト
-		HBox bottomLine = new HBox();
-		bottomLine.setAlignment(Pos.CENTER);
-		bottomLine.setMinHeight(height * 0.20);
 		// ぐー
-		Button goo = new Button("Rock");
+		goo = new Button("Rock");
 		goo.setAlignment(Pos.BASELINE_LEFT);
-		bottomLine.getChildren().add(goo);
 		// ぐーアクション
 		goo.setOnAction(evt -> {
 			midLine.getChildren().clear();
@@ -128,9 +136,8 @@ public class TestingView extends View {
 			userTe = 0;
 		});
 		// チョキ
-		Button chi = new Button("Scissors");
+		chi = new Button("Scissors");
 		chi.setAlignment(Pos.CENTER);
-		bottomLine.getChildren().add(chi);
 		// チョキアクション
 		chi.setOnAction(evt -> {
 			midLine.getChildren().clear();
@@ -141,9 +148,8 @@ public class TestingView extends View {
 			userTe = 1;
 		});
 		// パー
-		Button pa = new Button("Paper");
+		pa = new Button("Paper");
 		pa.setAlignment(Pos.BASELINE_RIGHT);
-		bottomLine.getChildren().add(pa);
 		// パーアクション
 		pa.setOnAction(evt -> {
 			midLine.getChildren().clear();
@@ -153,6 +159,9 @@ public class TestingView extends View {
 			midLine.getChildren().add(you);
 			userTe = 2;
 		});
+		// ボタンを表示するための横一列レイアウト
+		bottomLine = createLineLayout(height * 0.20, goo, chi, pa);
+
 		// 非表示に設定
 		goo.setVisible(false);
 		chi.setVisible(false);
@@ -175,6 +184,65 @@ public class TestingView extends View {
 		});
 	}
 
+	/**
+	 * １行文の横レイアウトを作成し、コンポーネントを追加します。
+	 * 
+	 * @param size １行文の縦幅
+	 * @param txt 追加のコンポーネント
+	 * @return HBox 作成したレイアウト
+	 */
+	private HBox createLineLayout(double size, Text txt) {
+		HBox layout = new HBox();
+		layout.setAlignment(Pos.CENTER);
+		layout.setMinHeight(size);
+		layout.getChildren().add(txt);
+		return layout;
+	}
+
+	/**
+	 * １行文の横レイアウトを作成し、コンポーネントを追加します。
+	 * sizeが0.0の時は行の高さを設定しない。
+	 * @param size １行文の縦幅
+	 * @param ctl 追加のコンポーネント
+	 * @return HBox 作成したレイアウト
+	 */
+	private HBox createLineLayout(double size, Button... ctl) {
+		HBox layout = new HBox();
+		layout.setAlignment(Pos.CENTER);
+		if (size != 0.0) {
+			layout.setMinHeight(size);
+		}
+		layout.getChildren().addAll(ctl);
+		return layout;
+	}
+
+	/**
+	 * １行文の横レイアウトを作成し、コンポーネントを追加します。
+	 * 
+	 * @param size １行文の縦幅
+	 * @param ctl 追加のコンポーネント
+	 * @return HBox 作成したレイアウト
+	 */
+	private HBox createLineLayout(double size, Canvas canv) {
+		HBox layout = new HBox();
+		layout.setAlignment(Pos.CENTER);
+		layout.setMinHeight(size);
+		layout.getChildren().add(canv);
+		return layout;
+	}
+
+	/**
+	 * 画面上部に表示する「Ready?」のテキストを作成する。
+	 * 
+	 * @return 「Ready?」のテキスト
+	 */
+	private Text createReadyTxt() {
+		Text txt = new Text();
+		txt.setText("READY?");
+		txt.setFont(new Font(45));
+		txt.setTextAlignment(TextAlignment.CENTER);
+		return txt;
+	}
 	/**
 	 * じゃんけんなどのアニメーションを作成する。
 	 * 
