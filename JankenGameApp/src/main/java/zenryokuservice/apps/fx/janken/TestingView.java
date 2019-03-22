@@ -72,13 +72,6 @@ public class TestingView extends View {
     private AnimationTimer timer;
     /** タイマー確認用カウンタ */
     private Integer i = new Integer(0);
-    /// クラス内で使用する変数 ///
-    /** 文字表示用カウンタ */ 
-	private Integer c = new Integer(0);
-	/** ユーザーの手 */
-	private int userTe;
-	/** CPUの手 */
-	private int cpuTe;
 	/// 画面コンポーネント ///
 	/** 画面上部の切り替えて表示テキスト */
 	private Text ready;
@@ -99,22 +92,38 @@ public class TestingView extends View {
 	private final HBox bottomLine;
 	/** 勝負ボタン配置用レイアウト */
 	private final HBox btnLine;
+    /// クラス内で使用する変数 ///
+    /** 文字表示用カウンタ */ 
+	private Integer c = new Integer(0);
+	/** ユーザーの手 */
+	private int userTe;
+	/** CPUの手 */
+	private int cpuTe;
+	/// じゃんけんの判定フラグ/// 
+	/** 早出し */
+	private boolean isFirstOut;
+	/** 遅だし */
+	private boolean isLate;
+	/** 勝負済み */
+	private boolean isFinish;
+	
+//	private Text debug;
 
 	/** コンストラクタ */
 	public TestingView() {
 		double height = MobileApplication.getInstance().getScreenHeight();
-		VBox gp = new VBox();
+		VBox tateLayout = new VBox();
 		// Rreadyの文言
 		ready = createReadyTxt();
 		// 一番上の横一列レイアウト
 		topLine = createLineLayout(height * 0.2, ready);
-		gp.getChildren().add(topLine);
+		tateLayout.getChildren().add(topLine);
 	
 		// 描画用のキャンバス(今後使用する予定) => 現状は未使用
 		final Canvas canv = new Canvas();
 		// じゃんけんの手を表示するための真ん中の横一列レイアウト
 		midLine = createLineLayout(height * 0.20, canv);
-		gp.getChildren().add(midLine);
+		tateLayout.getChildren().add(midLine);
 
 		// 描画用のグラフィックスコンテキスト
 		final GraphicsContext ctx = canv.getGraphicsContext2D();
@@ -122,42 +131,39 @@ public class TestingView extends View {
 		btn = new Button("勝負！");
 		btn.setAlignment(Pos.CENTER);
 		btnLine = createLineLayout(0.0, btn);
-		gp.getChildren().add(btnLine);
+		tateLayout.getChildren().add(btnLine);
 		// ぐー
 		goo = new Button("Rock");
 		goo.setAlignment(Pos.BASELINE_LEFT);
 		// ぐーアクション
 		goo.setOnAction(evt -> {
-			midLine.getChildren().clear();
 			Image img = new Image("leftグー.png");
 			ImageView you = new ImageView();
 			you.setImage(img);
-			midLine.getChildren().add(you);
 			userTe = 0;
+			userPon(ready, you);
 		});
 		// チョキ
 		chi = new Button("Scissors");
 		chi.setAlignment(Pos.CENTER);
 		// チョキアクション
 		chi.setOnAction(evt -> {
-			midLine.getChildren().clear();
 			Image img = new Image("leftチョキ.png");
 			ImageView you = new ImageView();
 			you.setImage(img);
-			midLine.getChildren().add(you);
 			userTe = 1;
+			userPon(ready, you);
 		});
 		// パー
 		pa = new Button("Paper");
 		pa.setAlignment(Pos.BASELINE_RIGHT);
 		// パーアクション
 		pa.setOnAction(evt -> {
-			midLine.getChildren().clear();
 			Image img = new Image("leftパー.png");
 			ImageView you = new ImageView();
 			you.setImage(img);
-			midLine.getChildren().add(you);
 			userTe = 2;
+			userPon(ready, you);
 		});
 		// ボタンを表示するための横一列レイアウト
 		bottomLine = createLineLayout(height * 0.20, goo, chi, pa);
@@ -166,24 +172,35 @@ public class TestingView extends View {
 		goo.setVisible(false);
 		chi.setVisible(false);
 		pa.setVisible(false);
-		gp.getChildren().add(bottomLine);
-		setCenter(gp);
+		tateLayout.getChildren().add(bottomLine);
+//		gp.getChildren().add(debug);
+		setCenter(tateLayout);
 		// アクション(勝負ボタン)
 		btn.setOnAction(evt -> {
-			// じゃんけんの手を初期化
-			userTe = -1;
-			cpuTe = -1;
-			// 勝負ボタンの非表示
-			btn.setVisible(false);
-			// じゃんけんの手を表示
-			goo.setVisible(true);
-			chi.setVisible(true);
-			pa.setVisible(true);
+			initJanken();
 			// じゃんけんアニメーション
 			startJanken(ctx, midLine, ready);
 		});
 	}
 
+	/**
+	 * じゃんけんゲームの初期化
+	 */
+	private void initJanken() {
+		// じゃんけんの手を初期化
+		userTe = -1;
+		cpuTe = -1;
+		// じゃんけんフラグ
+		isFirstOut = true;
+		isLate = false;
+		isFinish = false;
+		// 勝負ボタンの非表示
+		btn.setVisible(false);
+		// じゃんけんの手を表示
+		goo.setVisible(true);
+		chi.setVisible(true);
+		pa.setVisible(true);
+	}
 	/**
 	 * １行文の横レイアウトを作成し、コンポーネントを追加します。
 	 * 
@@ -207,10 +224,11 @@ public class TestingView extends View {
 	 * @return HBox 作成したレイアウト
 	 */
 	private HBox createLineLayout(double size, Button... ctl) {
-		HBox layout = new HBox();
+		HBox layout = new HBox(12);
 		layout.setAlignment(Pos.CENTER);
 		if (size != 0.0) {
 			layout.setMinHeight(size);
+			layout.setPadding(new Insets(3));
 		}
 		layout.getChildren().addAll(ctl);
 		return layout;
@@ -227,7 +245,7 @@ public class TestingView extends View {
 		HBox layout = new HBox();
 		layout.setAlignment(Pos.CENTER);
 		layout.setMinHeight(size);
-		layout.getChildren().add(canv);
+//		layout.getChildren().add(canv);
 		return layout;
 	}
 
@@ -243,12 +261,32 @@ public class TestingView extends View {
 		txt.setTextAlignment(TextAlignment.CENTER);
 		return txt;
 	}
+
+	/**
+	 * ユーザーがじゃんけんの手を出した時の処理。
+	 * @param ready　画面上部のテキスト
+	 * @param youNoTe 謳歌したボタンに対応するIMG
+	 */
+	private void userPon(Text ready, ImageView youNoTe) {
+		if(isFirstOut) {
+			ready.setText("はやだし！");
+		}
+		midLine.getChildren().remove(0);
+		shobu(ready);
+		isFinish = true;
+		midLine.getChildren().add(0, youNoTe);
+		timer.stop();
+	}
 	/**
 	 * じゃんけんなどのアニメーションを作成する。
 	 * 
 	 * @param ctx 描画コンテキスト
 	 */
 	private void startJanken(GraphicsContext ctx, HBox midLine, Text ready) {
+		btnLine.getChildren().clear();
+		goo.setDisable(false);
+		chi.setDisable(false);
+		pa.setDisable(false);
 		Image img = new Image("leftグー.png");
 		ImageView you = new ImageView();
 		you.setImage(img);
@@ -294,14 +332,42 @@ public class TestingView extends View {
 					ready.setText(t[c]);
 					c++;
 				}
+				if (c >= 2 && userTe != -1) {
+					isFirstOut = false;
+				}
 				if (c >= 3) {
 					timer.stop();
 					rotateTransition.stop();
 					rotateTransition2.stop();
-					midLine.getChildren().add(getCpuNoTe());
-					shobu(ready);
+					isFinish = true;
 				}
 				i++;
+			}
+
+			@Override
+			public void stop() {
+				btnLine.getChildren().clear();
+				Button retry = new Button("もう一度");
+				retry.setOnAction(evt -> {
+					midLine.getChildren().clear();
+					initJanken();
+					startJanken(ctx, midLine, ready);
+				} );
+				btnLine.getChildren().add(retry);
+				goo.setDisable(true);
+				chi.setDisable(true);
+				pa.setDisable(true);
+				try {
+					int size = midLine.getChildren().size();
+					midLine.getChildren().remove(size -1);
+					midLine.getChildren().add(getCpuNoTe());
+				} catch (Exception e) {
+					e.printStackTrace();
+					ready.setText("想定外のエラー！ゲームを終了してください。");
+					super.stop();
+				}
+				int hante = shobu(ready);
+				super.stop();
 			}
 		};
 		timeline.play();
@@ -327,9 +393,15 @@ public class TestingView extends View {
 	 * @return 0: ユーザーの勝利 1: CPUの勝利　2: あいこ
 	 */
 	private int shobu(Text ready) {
-		int aikoHante = cpuTe == userTe ? AIKO : OTHER;
-		if (aikoHante == AIKO) {
-			return AIKO;
+		if (userTe == -1) {
+			isLate = true;
+			ready.setText("おそだし！");
+			isFinish = true;
+			return YOU_LOOSE;
+		}
+		if (isFirstOut) {
+			ready.setText("はやだし！");
+			return YOU_LOOSE;
 		}
 		int hante = userTe + cpuTe;
 		if (hante == 0 || hante == 4 || hante == 8) {
@@ -339,10 +411,9 @@ public class TestingView extends View {
 		} else {
 			hante = YOU_LOOSE;
 		}
-		System.out.println("*** 判定 ***");
-		System.out.println("user: " + userTe + " / cpu: " + cpuTe);
-		System.out.println(hanteStr[hante]);
-		ready.setText(hanteStr[hante]);
+		if (isFirstOut == false && isLate == false && isFinish) {
+			ready.setText(hanteStr[hante]);
+		}
 		return hante;
 	}
 }
