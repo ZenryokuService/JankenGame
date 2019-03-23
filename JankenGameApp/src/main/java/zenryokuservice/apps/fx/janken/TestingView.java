@@ -39,6 +39,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
 import javafx.util.Duration;
+import zenryokuservice.apps.fx.janken.util.Judgement;
 
 /**
  * JavaFXでの3Dモデルの描画(作成？)、とりあえず写経する。
@@ -47,26 +48,12 @@ import javafx.util.Duration;
  * @see https://docs.oracle.com/javase/jp/8/javafx/graphics-tutorial/overview-3d.htm#CJAHFAHJ
  */
 public class TestingView extends View {
-	///// 定数 /////
-	/** じゃんけんぽん */
-	private final String[] t = new String[] {"Jan!", "Ken", "POM!"};
-	/** じゃんけんぽん(アイコ) */
-	private final String[] a = new String[] {"Ai!", "KoDe", "Show!"};
-	/** 勝敗判定文字列 */
-	private final String[] hanteStr = new String[] {"YouWin", "YouLoose", "Aiko"};
+
 	/** テキストの色 */
 	private final Color[] color = {Color.RED, Color.BLUE, Color.GREEN};
-	/** じゃんけんの判定：ユーザーの勝ち */
-	private static final int YOU_WIN = 0;
-	/** じゃんけんの判定：CPUの勝ち */
-	private static final int YOU_LOOSE = 1;
-	/** じゃんけんの判定：あいこ */
-	private static final int AIKO = 2;
-	/** じゃんけんの勝敗判定: それ以外 */
-	private static final int OTHER = 3;
 	///// Utility /////
-	/** 乱数用クラス */
-	private final Random rdn = new  Random();
+	/** じゃんけん判定クラス */
+	private Judgement judge;
 	/** アニメーション用タイマー */
     private Timeline timeline;
     private AnimationTimer timer;
@@ -95,22 +82,12 @@ public class TestingView extends View {
     /// クラス内で使用する変数 ///
     /** 文字表示用カウンタ */ 
 	private Integer c = new Integer(0);
-	/** ユーザーの手 */
-	private int userTe;
-	/** CPUの手 */
-	private int cpuTe;
-	/// じゃんけんの判定フラグ/// 
-	/** 早出し */
-	private boolean isFirstOut;
-	/** 遅だし */
-	private boolean isLate;
-	/** 勝負済み */
-	private boolean isFinish;
 	
 //	private Text debug;
 
 	/** コンストラクタ */
 	public TestingView() {
+		judge = new Judgement();
 		double height = MobileApplication.getInstance().getScreenHeight();
 		VBox tateLayout = new VBox();
 		// Rreadyの文言
@@ -140,7 +117,8 @@ public class TestingView extends View {
 			Image img = new Image("leftグー.png");
 			ImageView you = new ImageView();
 			you.setImage(img);
-			userTe = 0;
+			// userTe = 0;修正
+			judge.setUserTe(0);
 			userPon(ready, you);
 		});
 		// チョキ
@@ -151,7 +129,8 @@ public class TestingView extends View {
 			Image img = new Image("leftチョキ.png");
 			ImageView you = new ImageView();
 			you.setImage(img);
-			userTe = 1;
+			// userTe = 1;修正
+			judge.setUserTe(1);
 			userPon(ready, you);
 		});
 		// パー
@@ -162,7 +141,8 @@ public class TestingView extends View {
 			Image img = new Image("leftパー.png");
 			ImageView you = new ImageView();
 			you.setImage(img);
-			userTe = 2;
+			// userTe = 2;修正
+			judge.setCpuTe(2);
 			userPon(ready, you);
 		});
 		// ボタンを表示するための横一列レイアウト
@@ -188,12 +168,12 @@ public class TestingView extends View {
 	 */
 	private void initJanken() {
 		// じゃんけんの手を初期化
-		userTe = -1;
-		cpuTe = -1;
+		judge.setUserTe(-1);
+		judge.setCpuTe(-1);
 		// じゃんけんフラグ
-		isFirstOut = true;
-		isLate = false;
-		isFinish = false;
+		judge.setFirstOut(true);
+		judge.setLate(false);
+		judge.setFinish(false);
 		// 勝負ボタンの非表示
 		btn.setVisible(false);
 		// じゃんけんの手を表示
@@ -268,12 +248,12 @@ public class TestingView extends View {
 	 * @param youNoTe 謳歌したボタンに対応するIMG
 	 */
 	private void userPon(Text ready, ImageView youNoTe) {
-		if(isFirstOut) {
+		if(judge.isFirstOut()) {
 			ready.setText("はやだし！");
 		}
 		midLine.getChildren().remove(0);
-		shobu(ready);
-		isFinish = true;
+		judge.shobu(ready);
+		judge.setFinish(true);
 		midLine.getChildren().add(0, youNoTe);
 		timer.stop();
 	}
@@ -329,17 +309,17 @@ public class TestingView extends View {
 			@Override
 			public void handle(long time) {
 				if (i % 50 == 0 && c < 3) {
-					ready.setText(t[c]);
+					ready.setText(judge.getJanKenPon(c));
 					c++;
 				}
-				if (c >= 2 && userTe != -1) {
-					isFirstOut = false;
+				if (c >= 2 && judge.getUserTe() != -1) {
+					judge.setFirstOut(false);
 				}
 				if (c >= 3) {
 					timer.stop();
 					rotateTransition.stop();
 					rotateTransition2.stop();
-					isFinish = true;
+					judge.setFinish(true);
 				}
 				i++;
 			}
@@ -366,7 +346,7 @@ public class TestingView extends View {
 					ready.setText("想定外のエラー！ゲームを終了してください。");
 					super.stop();
 				}
-				int hante = shobu(ready);
+				int hante = judge.shobu(ready);
 				super.stop();
 			}
 		};
@@ -382,38 +362,9 @@ public class TestingView extends View {
 		Image[] imgHako = {new Image("rightグー.png"), new Image("rightチョキ.png"), new Image("rightパー.png")};
 		ImageView cpu = new ImageView();
 		// 0-2までの乱数
-		int te = rdn.nextInt(2);
+		int te = judge.getCpuTe();
 		cpu.setImage(imgHako[te]);
-		cpuTe = te;
+		judge.setCpuTe(te);
 		return cpu;
-	}
-
-	/**
-	 * じゃんけんの勝敗判定を行う。
-	 * @return 0: ユーザーの勝利 1: CPUの勝利　2: あいこ
-	 */
-	private int shobu(Text ready) {
-		if (userTe == -1) {
-			isLate = true;
-			ready.setText("おそだし！");
-			isFinish = true;
-			return YOU_LOOSE;
-		}
-		if (isFirstOut) {
-			ready.setText("はやだし！");
-			return YOU_LOOSE;
-		}
-		int hante = userTe + cpuTe;
-		if (hante == 0 || hante == 4 || hante == 8) {
-			hante = AIKO;
-		} else if (hante == 2 || hante == 3 || hante == 7) {
-			hante = YOU_WIN;
-		} else {
-			hante = YOU_LOOSE;
-		}
-		if (isFirstOut == false && isLate == false && isFinish) {
-			ready.setText(hanteStr[hante]);
-		}
-		return hante;
 	}
 }
